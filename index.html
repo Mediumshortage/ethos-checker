@@ -81,9 +81,11 @@
             "function getProfileByTwitter(string memory handle) public view returns ((address owner, string twitter, uint256 vouchesReceived, uint256 vouchesGiven, uint256 credibility, uint256 lastUpdate, bool exists))",
             "event Review(address indexed reviewer, address indexed subject, int8 score, string comment)"
         ];
+        
+        // --- Public RPC Provider for Base Network (Read-Only) ---
+        const publicBaseRpcUrl = 'https://mainnet.base.org';
 
         // --- Global Variables ---
-        let provider;
         let ethosContract;
 
         // --- DOM Elements ---
@@ -95,48 +97,34 @@
         
         // --- Event Listeners ---
         checkButton.addEventListener('click', checkReviews);
-
+        
         /**
-         * Ensures the wallet is connected. If not, it prompts the user to connect.
-         * This function is called before any on-chain action.
-         * @returns {Promise<boolean>} - True if connected, false otherwise.
+         * Initializes the connection to the blockchain using a public RPC provider.
+         * This allows reading data without requiring a user's wallet.
          */
-        async function ensureWalletConnected() {
-            if (ethosContract) return true; // Already connected
-
-            if (typeof window.ethereum !== 'undefined') {
-                try {
-                    provider = new ethers.providers.Web3Provider(window.ethereum);
-                    
-                    const baseNetwork = { chainId: 8453, name: "Base" };
-                    const network = await provider.getNetwork();
-                    if(network.chainId !== baseNetwork.chainId) {
-                         alert("Please switch your wallet to the Base network to use this dApp.");
-                         return false;
-                    }
-
-                    await provider.send("eth_requestAccounts", []);
-                    ethosContract = new ethers.Contract(ethosContractAddress, ethosContractABI, provider);
-                    return true;
-
-                } catch (error) {
-                    console.error("Failed to connect wallet:", error);
-                    alert("Failed to connect wallet. Please approve the connection in your wallet.");
-                    return false;
-                }
-            } else {
-                alert('MetaMask is not installed. Please install it to use this dApp.');
-                return false;
+        function initializeContract() {
+            if (ethosContract) return; // Already initialized
+            try {
+                // Create a provider using the public RPC URL
+                const provider = new ethers.providers.JsonRpcProvider(publicBaseRpcUrl);
+                // Create a contract instance for read-only operations
+                ethosContract = new ethers.Contract(ethosContractAddress, ethosContractABI, provider);
+            } catch (error) {
+                console.error("Failed to initialize public provider:", error);
+                alert("Could not connect to the Base network. Please try again later.");
             }
         }
+
 
         /**
          * Main function to check for reviews on-chain.
          */
         async function checkReviews() {
-            // Ensure wallet is connected before proceeding
-            const isConnected = await ensureWalletConnected();
-            if (!isConnected) return;
+            // Initialize the read-only contract connection if it doesn't exist
+            initializeContract();
+            if (!ethosContract) {
+                return; // Stop if initialization failed
+            }
 
             const twitterInputs = [document.getElementById('twitterId1'), document.getElementById('twitterId2')];
             const handles = twitterInputs.map(input => input.value.startsWith('@') ? input.value.substring(1) : input.value).filter(id => id.trim() !== '');
@@ -244,6 +232,9 @@
             
             resultsContent.appendChild(resultElement);
         }
+
+        // Automatically initialize the connection when the page loads
+        window.onload = initializeContract;
     </script>
 </body>
 </html>
