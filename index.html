@@ -82,8 +82,9 @@
             "event Review(address indexed reviewer, address indexed subject, int8 score, string comment)"
         ];
         
-        // --- Public RPC Provider for Base Network (Read-Only) ---
-        const publicBaseRpcUrl = 'https://mainnet.base.org';
+        // --- Dedicated RPC Provider for Base Network (Read-Only) ---
+        // Replace this with your own free RPC URL from a provider like Alchemy or Infura
+        const baseRpcUrl = 'YOUR_DEDICATED_BASE_RPC_URL';
 
         // --- Global Variables ---
         let ethosContract;
@@ -99,19 +100,27 @@
         checkButton.addEventListener('click', checkReviews);
         
         /**
-         * Initializes the connection to the blockchain using a public RPC provider.
+         * Initializes the connection to the blockchain using a dedicated RPC provider.
          * This allows reading data without requiring a user's wallet.
          */
         function initializeContract() {
-            if (ethosContract) return; // Already initialized
+            if (ethosContract) return true; // Already initialized
+
+            if (baseRpcUrl === 'YOUR_DEDICATED_BASE_RPC_URL') {
+                alert("Developer setup needed: Please replace 'YOUR_DEDICATED_BASE_RPC_URL' in the code with a real RPC URL.");
+                return false;
+            }
+
             try {
-                // Create a provider using the public RPC URL
-                const provider = new ethers.providers.JsonRpcProvider(publicBaseRpcUrl);
+                // Create a provider using the dedicated RPC URL
+                const provider = new ethers.providers.JsonRpcProvider(baseRpcUrl);
                 // Create a contract instance for read-only operations
                 ethosContract = new ethers.Contract(ethosContractAddress, ethosContractABI, provider);
+                return true;
             } catch (error) {
-                console.error("Failed to initialize public provider:", error);
-                alert("Could not connect to the Base network. Please try again later.");
+                console.error("Failed to initialize provider:", error);
+                alert("Could not connect to the Base network. The RPC provider might be invalid or unreachable.");
+                return false;
             }
         }
 
@@ -121,8 +130,8 @@
          */
         async function checkReviews() {
             // Initialize the read-only contract connection if it doesn't exist
-            initializeContract();
-            if (!ethosContract) {
+            const isInitialized = initializeContract();
+            if (!isInitialized) {
                 return; // Stop if initialization failed
             }
 
