@@ -16,7 +16,7 @@
             color: #ffffff; /* Fallback for text-white */
         }
         .card-glow {
-            box-shadow: 0 0 15px rgba(79, 70, 229, 0.3), 0 0 5px rgba(79, 70, 229, 0.2);
+            box-shadow: 0 0 25px rgba(79, 70, 229, 0.2), 0 0 10px rgba(79, 70, 229, 0.1);
         }
         button:disabled {
             opacity: 0.5;
@@ -27,10 +27,13 @@
 <body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4">
 
     <div class="w-full max-w-md">
-        <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6 sm:p-8 card-glow">
+        <div class="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-2xl p-6 sm:p-8 card-glow">
             <!-- Header -->
             <div class="text-center mb-8">
-                <h1 class="text-2xl sm:text-3xl font-bold text-indigo-400">Ethos Review Checker</h1>
+                <div class="flex justify-center items-center gap-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-400"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"></path></svg>
+                    <h1 class="text-2xl sm:text-3xl font-bold">Ethos Review Checker</h1>
+                </div>
                 <p class="text-gray-400 mt-2">Check for mutual reviews between two Twitter users directly on-chain.</p>
             </div>
 
@@ -55,7 +58,7 @@
         </div>
 
         <!-- Results Section -->
-        <div id="results" class="mt-6 bg-gray-800 border border-gray-700 rounded-2xl p-6 hidden">
+        <div id="results" class="mt-6 bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-2xl p-6 hidden">
              <h2 class="text-xl font-bold text-center mb-4">Results</h2>
              <div id="results-content" class="space-y-3 text-gray-300">
                 <!-- Results will be injected here -->
@@ -195,340 +198,52 @@
             
             const { handleA, handleB, aReviewedB, bReviewedA, addressA, addressB } = reviewData;
 
-            let resultText = '';
-            let icon = '';
+            let statusText = '';
+            let statusColor = 'text-gray-400';
+            let arrowIcon = `<div class="w-1/3 flex justify-center items-center"><svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg></div>`;
 
             if (!addressA || !addressB) {
-                resultText = `<span class="text-yellow-500">One or both profiles not found</span>`;
-                icon = '❓';
+                statusText = 'One or both profiles not found';
+                statusColor = 'text-yellow-500';
             } else if (aReviewedB && bReviewedA) {
-                resultText = `<span class="font-semibold text-green-400">Mutual Review</span>`;
-                icon = '✅';
+                statusText = 'Mutual Review';
+                statusColor = 'text-green-400';
+                arrowIcon = `
+                    <div class="w-1/3 flex flex-col justify-center items-center text-green-400">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16l-4-4m0 0l4-4m-4 4h14"></path></svg>
+                    </div>`;
             } else if (aReviewedB) {
-                resultText = `reviewed @${handleB}`;
-                icon = '→';
+                statusText = `@${handleA} reviewed @${handleB}`;
+                statusColor = 'text-indigo-400';
+                arrowIcon = `<div class="w-1/3 flex justify-center items-center text-indigo-400"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg></div>`;
             } else if (bReviewedA) {
-                resultText = `reviewed @${handleA}`;
-                icon = '←';
+                statusText = `@${handleB} reviewed @${handleA}`;
+                statusColor = 'text-indigo-400';
+                arrowIcon = `<div class="w-1/3 flex justify-center items-center text-indigo-400"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16l-4-4m0 0l4-4m-4 4h14"></path></svg></div>`;
             } else {
-                resultText = `<span class="text-gray-500">No reviews found</span>`;
-                icon = '❌';
+                statusText = 'No reviews found between them';
             }
 
             const resultElement = document.createElement('div');
-            resultElement.className = 'flex items-center justify-between bg-gray-700/50 p-3 rounded-lg';
-            
-            let userDisplayA = `<span class="font-medium ${addressA ? 'text-indigo-300' : 'text-gray-500'}">@${handleA}</span>`;
-            let userDisplayB = `<span class="font-medium ${addressB ? 'text-indigo-300' : 'text-gray-500'}">@${handleB}</span>`;
-
-            if (aReviewedB && bReviewedA) {
-                 resultElement.innerHTML = `<div>${userDisplayA} & ${userDisplayB}</div> <div class="text-right">${resultText} ${icon}</div>`;
-            } else if (aReviewedB) {
-                 resultElement.innerHTML = `<div>${userDisplayA}</div> <div class="text-right">${resultText}</div>`;
-            } else if (bReviewedA) {
-                 resultElement.innerHTML = `<div>${userDisplayB}</div> <div class="text-right">${resultText}</div>`;
-            } else {
-                 resultElement.innerHTML = `<div>${userDisplayA} & ${userDisplayB}</div> <div class="text-right">${resultText} ${icon}</div>`;
-            }
+            resultElement.className = 'bg-gray-900/70 p-4 rounded-lg';
+            resultElement.innerHTML = `
+                <div class="flex justify-between items-center text-center">
+                    <div class="w-1/3">
+                        <p class="font-bold text-lg ${addressA ? 'text-white' : 'text-gray-500'}">@${handleA}</p>
+                        <p class="text-xs text-gray-400 truncate" title="${addressA || ''}">${addressA ? `${addressA.substring(0, 6)}...${addressA.substring(addressA.length - 4)}` : 'Not Found'}</p>
+                    </div>
+                    ${arrowIcon}
+                    <div class="w-1/3">
+                        <p class="font-bold text-lg ${addressB ? 'text-white' : 'text-gray-500'}">@${handleB}</p>
+                        <p class="text-xs text-gray-400 truncate" title="${addressB || ''}">${addressB ? `${addressB.substring(0, 6)}...${addressB.substring(addressB.length - 4)}` : 'Not Found'}</p>
+                    </div>
+                </div>
+                <p class="text-center mt-4 text-sm font-medium ${statusColor}">${statusText}</p>
+            `;
             
             resultsContent.appendChild(resultElement);
         }
     </script>
 </body>
 </html>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ethos Mutual Review Checker (On-Chain)</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Include Ethers.js library -->
-    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js" type="application/javascript"></script>
-    <style>
-        /* Basic fallback styles to ensure visibility if Tailwind CSS fails to load */
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #111827; /* Fallback for bg-gray-900 */
-            color: #ffffff; /* Fallback for text-white */
-        }
-        .card-glow {
-            box-shadow: 0 0 15px rgba(79, 70, 229, 0.3), 0 0 5px rgba(79, 70, 229, 0.2);
-        }
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-    </style>
-</head>
-<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4">
-
-    <div class="w-full max-w-md">
-        <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6 sm:p-8 card-glow">
-            <!-- Header -->
-            <div class="text-center mb-8">
-                <h1 class="text-2xl sm:text-3xl font-bold text-indigo-400">Ethos Review Checker</h1>
-                <p class="text-gray-400 mt-2">Check for mutual reviews between Twitter users directly on-chain.</p>
-            </div>
-
-            <!-- Wallet Connection -->
-            <div class="mb-6">
-                 <button id="connectButton" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300">
-                    Connect Wallet
-                </button>
-                <p id="walletStatus" class="text-center text-xs text-green-400 mt-2 hidden"></p>
-            </div>
-
-            <!-- Input Form -->
-            <div class="space-y-4">
-                <div>
-                    <label for="twitterId1" class="block text-sm font-medium text-gray-300 mb-1">Twitter Handle 1</label>
-                    <input type="text" id="twitterId1" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="@userA">
-                </div>
-                <div>
-                    <label for="twitterId2" class="block text-sm font-medium text-gray-300 mb-1">Twitter Handle 2</label>
-                    <input type="text" id="twitterId2" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="@userB">
-                </div>
-                <div>
-                    <label for="twitterId3" class="block text-sm font-medium text-gray-300 mb-1">Twitter Handle 3</label>
-                    <input type="text" id="twitterId3" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="@userC">
-                </div>
-            </div>
-
-            <!-- Check Button -->
-            <div class="mt-8">
-                <button id="checkButton" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105" disabled>
-                    Check Reviews
-                </button>
-            </div>
-        </div>
-
-        <!-- Results Section -->
-        <div id="results" class="mt-6 bg-gray-800 border border-gray-700 rounded-2xl p-6 hidden">
-             <h2 class="text-xl font-bold text-center mb-4">Results</h2>
-             <div id="results-content" class="space-y-3 text-gray-300">
-                <!-- Results will be injected here -->
-             </div>
-             <div id="loading" class="text-center hidden">
-                <svg class="animate-spin h-5 w-5 text-indigo-400 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <p id="loading-text" class="mt-2 text-sm">Fetching data from the Base network...</p>
-             </div>
-        </div>
-    </div>
-
-    <script>
-        // --- Smart Contract Details ---
-        const ethosContractAddress = '0x2545273414922134515a7043732454e14958142b';
-        // A small part of the contract's ABI (Application Binary Interface) that we need
-        const ethosContractABI = [
-            "function getProfileByTwitter(string memory handle) public view returns ((address owner, string twitter, uint256 vouchesReceived, uint256 vouchesGiven, uint256 credibility, uint256 lastUpdate, bool exists))",
-            "event Review(address indexed reviewer, address indexed subject, int8 score, string comment)"
-        ];
-
-        // --- Global Variables ---
-        let provider;
-        let ethosContract;
-
-        // --- DOM Elements ---
-        const connectButton = document.getElementById('connectButton');
-        const checkButton = document.getElementById('checkButton');
-        const walletStatus = document.getElementById('walletStatus');
-        const resultsDiv = document.getElementById('results');
-        const resultsContent = document.getElementById('results-content');
-        const loadingDiv = document.getElementById('loading');
-        const loadingText = document.getElementById('loading-text');
-        
-        // --- Event Listeners ---
-        connectButton.addEventListener('click', connectWallet);
-        checkButton.addEventListener('click', checkReviews);
-
-        /**
-         * Connects to the user's Ethereum wallet (e.g., MetaMask).
-         */
-        async function connectWallet() {
-            if (typeof window.ethereum !== 'undefined') {
-                try {
-                    // Use a generic provider for reading data, no need to request accounts yet
-                    provider = new ethers.providers.Web3Provider(window.ethereum);
-                    
-                    // The Base network details
-                    const baseNetwork = {
-                        chainId: 8453,
-                        name: "Base"
-                    };
-                    
-                    // Check if the user is on the correct network
-                    const network = await provider.getNetwork();
-                    if(network.chainId !== baseNetwork.chainId) {
-                         alert("Please switch your wallet to the Base network to use this dApp.");
-                         return;
-                    }
-
-                    // Request account access
-                    await provider.send("eth_requestAccounts", []);
-                    const signer = provider.getSigner();
-                    const address = await signer.getAddress();
-
-                    // Instantiate the contract
-                    ethosContract = new ethers.Contract(ethosContractAddress, ethosContractABI, provider);
-
-                    // Update UI
-                    connectButton.textContent = 'Wallet Connected';
-                    connectButton.disabled = true;
-                    checkButton.disabled = false;
-                    walletStatus.textContent = `Connected: ${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
-                    walletStatus.classList.remove('hidden');
-
-                } catch (error) {
-                    console.error("Failed to connect wallet:", error);
-                    alert("Failed to connect wallet. Please make sure you have a wallet like MetaMask installed and are on the Base network.");
-                }
-            } else {
-                alert('MetaMask is not installed. Please install it to use this dApp.');
-            }
-        }
-
-        /**
-         * Main function to check for reviews on-chain.
-         */
-        async function checkReviews() {
-            const twitterInputs = [document.getElementById('twitterId1'), document.getElementById('twitterId2'), document.getElementById('twitterId3')];
-            const handles = twitterInputs.map(input => input.value.startsWith('@') ? input.value.substring(1) : input.value).filter(id => id.trim() !== '');
-
-            if (handles.length < 2) {
-                alert('Please enter at least two Twitter handles.');
-                return;
-            }
-
-            // Show loading indicator
-            resultsDiv.classList.remove('hidden');
-            loadingDiv.classList.remove('hidden');
-            resultsContent.innerHTML = '';
-
-            try {
-                // 1. Get addresses for all twitter handles
-                loadingText.textContent = 'Fetching profiles from Ethos contract...';
-                const profiles = {};
-                for (const handle of handles) {
-                    try {
-                        const profile = await ethosContract.getProfileByTwitter(handle);
-                        if (profile.exists) {
-                            profiles[handle] = profile.owner;
-                        } else {
-                           profiles[handle] = null; // Handle not found
-                        }
-                    } catch (e) {
-                        console.error(`Could not fetch profile for ${handle}:`, e);
-                        profiles[handle] = null;
-                    }
-                }
-
-                // 2. Create pairs and check for reviews
-                loadingText.textContent = 'Querying review events on Base...';
-                const combinations = getCombinations(handles);
-                const reviewData = [];
-
-                for (const [handleA, handleB] of combinations) {
-                    const addressA = profiles[handleA];
-                    const addressB = profiles[handleB];
-
-                    let aReviewedB = false;
-                    let bReviewedA = false;
-
-                    if(addressA && addressB) {
-                        // Check if A reviewed B
-                        const filterAReviewedB = ethosContract.filters.Review(addressA, addressB);
-                        const eventsAReviewedB = await ethosContract.queryFilter(filterAReviewedB, 0, 'latest');
-                        if (eventsAReviewedB.length > 0) aReviewedB = true;
-
-                        // Check if B reviewed A
-                        const filterBReviewedA = ethosContract.filters.Review(addressB, addressA);
-                        const eventsBReviewedA = await ethosContract.queryFilter(filterBReviewedA, 0, 'latest');
-                        if (eventsBReviewedA.length > 0) bReviewedA = true;
-                    }
-                    
-                    reviewData.push({ handleA, handleB, aReviewedB, bReviewedA, addressA, addressB });
-                }
-
-                displayResults(reviewData);
-
-            } catch (error) {
-                console.error("An error occurred during on-chain fetch:", error);
-                resultsContent.innerHTML = `<p class="text-red-400 text-center">An error occurred. Make sure the Twitter handles are correct and registered on Ethos.</p>`;
-            } finally {
-                loadingDiv.classList.add('hidden');
-            }
-        }
-        
-        /**
-         * Creates unique pairs from a list of items.
-         */
-        function getCombinations(items) {
-            const combinations = [];
-            for (let i = 0; i < items.length; i++) {
-                for (let j = i + 1; j < items.length; j++) {
-                    combinations.push([items[i], items[j]]);
-                }
-            }
-            return combinations;
-        }
-
-        /**
-         * Displays the results in the UI.
-         */
-        function displayResults(reviewData) {
-            resultsContent.innerHTML = '';
-            
-            if (reviewData.length === 0) {
-                resultsContent.innerHTML = `<p class="text-center">Could not find any valid pairs to compare.</p>`;
-                return;
-            }
-
-            reviewData.forEach(({ handleA, handleB, aReviewedB, bReviewedA, addressA, addressB }) => {
-                let resultText = '';
-                let icon = '';
-
-                if (!addressA || !addressB) {
-                    resultText = `<span class="text-yellow-500">Profile not found</span>`;
-                    icon = '❓';
-                } else if (aReviewedB && bReviewedA) {
-                    resultText = `<span class="font-semibold text-green-400">Mutual Review</span>`;
-                    icon = '✅';
-                } else if (aReviewedB) {
-                    resultText = `reviewed @${handleB}`;
-                    icon = '→';
-                } else if (bReviewedA) {
-                    resultText = `reviewed @${handleA}`;
-                    icon = '←';
-                } else {
-                    resultText = `<span class="text-gray-500">No reviews found</span>`;
-                    icon = '❌';
-                }
-
-                const resultElement = document.createElement('div');
-                resultElement.className = 'flex items-center justify-between bg-gray-700/50 p-3 rounded-lg';
-                
-                let userDisplayA = `<span class="font-medium ${addressA ? 'text-indigo-300' : 'text-gray-500'}">@${handleA}</span>`;
-                let userDisplayB = `<span class="font-medium ${addressB ? 'text-indigo-300' : 'text-gray-500'}">@${handleB}</span>`;
-
-                if (aReviewedB && bReviewedA) {
-                     resultElement.innerHTML = `<div>${userDisplayA} & ${userDisplayB}</div> <div class="text-right">${resultText} ${icon}</div>`;
-                } else if (aReviewedB) {
-                     resultElement.innerHTML = `<div>${userDisplayA}</div> <div class="text-right">${resultText}</div>`;
-                } else if (bReviewedA) {
-                     resultElement.innerHTML = `<div>${userDisplayB}</div> <div class="text-right">${resultText}</div>`;
-                } else {
-                     resultElement.innerHTML = `<div>${userDisplayA} & ${userDisplayB}</div> <div class="text-right">${resultText} ${icon}</div>`;
-                }
-                
-                resultsContent.appendChild(resultElement);
-            });
-        }
-    </script>
-</body>
-</html>
-
