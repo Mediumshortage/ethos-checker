@@ -83,7 +83,6 @@
         ];
         
         // --- Dedicated RPC Provider for Base Network (Read-Only) ---
-        // Replace this with your own free RPC URL from a provider like Alchemy or Infura
         const baseRpcUrl = 'https://base.llamarpc.com';
 
         // --- Global Variables ---
@@ -105,11 +104,6 @@
          */
         function initializeContract() {
             if (ethosContract) return true; // Already initialized
-
-            if (baseRpcUrl === 'https://base.llamarpc.com') {
-                alert("Developer setup needed: Please replace 'YOUR_DEDICATED_BASE_RPC_URL' in the code with a real RPC URL.");
-                return false;
-            }
 
             try {
                 // Create a provider using the dedicated RPC URL
@@ -247,5 +241,3 @@
     </script>
 </body>
 </html>
-
-
